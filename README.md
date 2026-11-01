@@ -4,17 +4,19 @@
 
 BuffCut partitions graphs that are too large to hold in memory. Nodes arrive as a stream, wait in a bounded priority buffer, and are assigned in batches with a multilevel partitioner. This keeps the edge cut low even when the stream order is adversarial. BuffCut has been integrated into [HeiStream](https://github.com/KaHIP/HeiStream), the streaming partitioner of the KaHIP project.
 
-<p align="center">
-  <img src="img/buffcut.gif" alt="BuffCut on a small graph: nodes stream in, wait in a priority buffer, move to a batch and are assigned to a white or red block" width="100%">
-</p>
-<p align="center"><sub>The algorithm on a toy graph (k = 2, buffer 18, batch 6). The multilevel step is simplified. <a href="https://libaum.de/#research">Interactive version</a></sub></p>
-
 ## How it works
+
+<p align="center">
+  <img src="img/buffcut.png" alt="Snapshot of BuffCut on a small graph: a stream column, a priority buffer with score buckets, a batch, and the assigned graph split into a white and a red block" width="100%">
+</p>
+<p align="center"><sub>Snapshot of BuffCut on a toy graph (k = 2, buffer 18, batch 6). <b><a href="https://libaum.de/#research">Watch it run step by step →</a></b></sub></p>
+
+The four columns of the figure, from left to right:
 
 1. **Stream.** Nodes arrive one by one. High-degree hubs are assigned immediately.
 2. **Buffer.** All other nodes wait in a bucket priority queue with amortized O(1) updates. The score favours nodes with many already-assigned neighbours.
 3. **Batch.** When the buffer is full, its top node moves into the current batch.
-4. **Assign.** A full batch is partitioned jointly with a multilevel scheme, then committed.
+4. **Assign.** A full batch is partitioned jointly with a multilevel scheme, then committed. Dashed edges are cut.
 
 ## Results
 
