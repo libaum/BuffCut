@@ -12,7 +12,7 @@ BuffCut partitions graphs that are too large to hold in memory. Nodes arrive as 
 </picture>
 <p align="center"><sub>Snapshot of BuffCut on a toy graph (k = 2, buffer 18, batch 6). <b><a href="https://libaum.de/#research">Watch it run step by step →</a></b></sub></p>
 
-The buffer is a bucket priority queue with amortized O(1) updates, so reprioritising nodes stays cheap under tight memory limits. Each batch is partitioned with a multilevel scheme on a small model graph in which each existing block is represented by one auxiliary node.
+Buffered nodes are ranked by the Hub-Aware Assigned Neighbors Ratio, $\mathrm{HAA}(v) = \hat{d}(v)^{\beta} + \theta\,(1 - \hat{d}(v))\,\mathrm{ANR}(v)$, where $\hat{d}$ is the normalised degree and ANR the share of neighbours already assigned. High-degree nodes are thus prioritised by degree, low-degree nodes by their placed neighbourhood. The buffer is a bucket priority queue with amortized O(1) updates, so reprioritising nodes stays cheap under tight memory limits. Each batch is partitioned with a multilevel scheme on a small model graph in which each existing block is represented by one auxiliary node.
 
 ## Results
 
