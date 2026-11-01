@@ -1,67 +1,77 @@
 # BuffCut
 
+**Prioritized buffered streaming graph partitioning.** Published at SEA 2026 · [arXiv:2602.21248](https://arxiv.org/abs/2602.21248) · [Interactive explainer](https://libaum.de/#research)
 
-**BuffCut** is a **buffered streaming graph partitioner** developed as part of my master’s thesis.
-It builds on the [HeiStream](https://github.com/KaHIP/HeiStream) framework and leverages **prioritized buffering** and **multilevel refinement** to achieve more **robust partition quality**, especially under **adversarial node orderings**.
+BuffCut partitions graphs that are too large to hold in memory. Nodes arrive as a stream, wait in a bounded priority buffer, and are assigned in batches with a multilevel partitioner. This keeps the edge cut low even when the stream order is adversarial. BuffCut has been integrated into [HeiStream](https://github.com/KaHIP/HeiStream), the streaming partitioner of the KaHIP project.
 
----
+<p align="center">
+  <img src="img/buffcut.gif" alt="BuffCut on a small graph: nodes stream in, wait in a priority buffer, move to a batch and are assigned to a white or red block" width="100%">
+</p>
+<p align="center"><sub>The algorithm on a toy graph (k = 2, buffer 18, batch 6). The multilevel step is simplified. <a href="https://libaum.de/#research">Interactive version</a></sub></p>
 
-## 🧩 Concept
+## How it works
 
-BuffCut processes the input graph as a stream and keeps a configurable **buffer** of recently seen nodes.
-Nodes are scored and selected for partitioning in small **batches** using a multilevel partitioning strategy.
+1. **Stream.** Nodes arrive one by one. High-degree hubs are assigned immediately.
+2. **Buffer.** All other nodes wait in a bucket priority queue with amortized O(1) updates. The score favours nodes with many already-assigned neighbours.
+3. **Batch.** When the buffer is full, its top node moves into the current batch.
+4. **Assign.** A full batch is partitioned jointly with a multilevel scheme, then committed.
 
-- Increasing the **buffer size** and **batch size** improves partition quality.
-- Larger values also increase **memory consumption**.
-- Typically, a ratio of about **1:8** to **1:16** (batch size : buffer size) works well.
-- The **ghost neighbor** mechanism can be enabled to improve partition quality.
+## Results
 
----
+Compared to the strongest prioritized buffering baseline, BuffCut cuts **20.8 % fewer edges**, runs **2.9× faster** and uses **11.3× less memory**. Against the next-best buffered method it cuts 15.8 % fewer edges at a 1.8× runtime overhead. Details are in the [paper](https://arxiv.org/abs/2602.21248).
 
-## 🚀 Minimal Example
+## Build
 
-### Building BuffCut
+Requirements: a C++17 compiler, CMake ≥ 3.10, MPI, and optionally OpenMP.
 
-To build the software, run
 ```shell
+git clone --recursive https://github.com/libaum/BuffCut.git
+cd BuffCut
 ./compile.sh
 ```
 
-After building the project, two executables are available in `deploy/`:
-- `buffcut` – serial version
-- `par_buffcut` – parallel version (faster, slightly higher memory usage)
+This produces two binaries in `deploy/`:
 
+| Binary | |
+|---|---|
+| `buffcut` | serial version |
+| `par_buffcut` | parallel version, faster with slightly higher memory use |
 
+## Usage
 
-### Basic Usage
-To partition a graph in METIS format using the standard parameters of BuffCut, run
-
-```bash
-./par_buffcut <graph_file> --k=4
-```
-
-
-Adjusting buffer and batch size (serial):
-```shell
-./par_buffcut <graph file> --k=4 --batch_size=16384 --buffer_size=131072
-```
-
-Ghost neighbors enabled:
-```shell
-./par_buffcut <graph file> --k=4 --batch_size=16384 --buffer_size=131072 --enable_ghost
-```
-
-
-For a complete list of parameters alongside with descriptions, run:
+Graphs are read in METIS format (see the [KaHIP manual](https://github.com/KaHIP/KaHIP/raw/master/manual/kahip.pdf)). Two example graphs are in `examples/`.
 
 ```shell
-./par_buffcut --help
+# default parameters, 4 blocks
+./deploy/par_buffcut examples/rgg_n_2_15_s0.graph --k=4
+
+# larger buffer and batch
+./deploy/par_buffcut examples/rgg_n_2_15_s0.graph --k=4 --batch_size=16384 --buffer_size=131072
+
+# with ghost neighbours
+./deploy/par_buffcut examples/rgg_n_2_15_s0.graph --k=4 --batch_size=16384 --buffer_size=131072 --enable_ghost
+
+# all parameters
+./deploy/par_buffcut --help
 ```
 
-For a description of the graph format, please have a look at the [KaHiP manual](https://github.com/KaHIP/KaHIP/raw/master/manual/kahip.pdf).
+**Tuning.** Larger buffers and batches give better partitions at the cost of memory. A batch-to-buffer ratio between 1:8 and 1:16 works well. Ghost neighbours usually improve quality further.
 
+With `--write_log`, results are written to a [FlatBuffers](https://github.com/google/flatbuffers) file named `graph_k_batchsize_buffersize.bin`.
 
-Note:
-- The program stores the results of the executed command in a [flatbuffer](https://github.com/google/flatbuffers) `.bin`
-  file identified by `graph_k_batchsize_buffersize.bin` if you pass the flag `write_log`.
+## Citation
 
+```bibtex
+@misc{baumgaertner2026buffcut,
+  title         = {BuffCut: Prioritized Buffered Streaming Graph Partitioning},
+  author        = {Baumg{\"a}rtner, Linus and Chhabra, Adil and Faraj, Marcelo Fonseca and Schulz, Christian},
+  year          = {2026},
+  eprint        = {2602.21248},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.DB}
+}
+```
+
+## License
+
+MIT. BuffCut builds on [HeiStream](https://github.com/KaHIP/HeiStream) and [KaHIP](https://github.com/KaHIP/KaHIP).
